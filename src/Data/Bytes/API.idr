@@ -108,9 +108,15 @@ unpack (MkB fp pos len) =
 -------------------------------------------------
 
 -- Intended complexity: O(1)
+export
 total
-length : Bytes -> Int
-length (MkB _ _ len) = len
+length' : Bytes -> Int
+length' (MkB _ _ len) = len
+
+export
+total
+length : Bytes -> Nat
+length = integerToNat . cast . length'
 
 -- Intended complexity: O(1)
 export
