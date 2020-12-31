@@ -1,18 +1,19 @@
 module Test
 
-import Test.LazyTest
+-- import Test.LazyTest
 
 testStrict  : IO ()
-testLazy    : IO ()
+-- testLazy    : IO ()
 testBuilder : IO ()
 
 partial
 main : IO ()
 main = do
+  pure ()
   -- testStrict
   -- testLazy
   -- testBuilder
-  printLn "Testing lazy file IO:" *> lazyIOTest
+  -- printLn "Testing lazy file IO:" *> lazyIOTest
   -- This crashes currently for errors, obvious we'll want a better testing
   -- method as we go.
 

@@ -1,4 +1,4 @@
-module Data.Bytes.Strict.IO
+module Data.Bytes.IO
 
 -- functions for reading/writing Bytes to and from files
 

@@ -13,7 +13,6 @@ brief      = "Test suit for Bytes"
 
 modules = Test
         , Test.Generate
-        , Test.LazyTest
         -- , SmallCheck
 
 -- sourcedir = ""

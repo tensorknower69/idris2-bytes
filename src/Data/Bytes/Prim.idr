@@ -1,10 +1,7 @@
 module Data.Bytes.Prim
 
 import Data.Bytes.Util
-
 import Data.Buffer
-
-import Data.Word.Word8
 
 moduleName : String
 moduleName = "Data.Bytes.Prim"
@@ -32,11 +29,11 @@ exactEqBlock : Block -> Block -> IO Bool
 exactEqBlock x y = primIO $ prim_exactEqBuff x y
 
 export
-getByte : Block -> (loc : Int) -> IO Word8
+getByte : Block -> (loc : Int) -> IO Bits8
 getByte b loc = cast <$> Data.Buffer.getByte b loc
 
 export
-blockData : Block -> IO (List Word8)
+blockData : Block -> IO (List Bits8)
 blockData b = map cast <$> bufferData b
 
 ---------------------------------------------------------------------
@@ -51,7 +48,7 @@ export
 data MutBlock = MkMB Block
 
 export
-setByte : MutBlock -> Int -> Word8 -> IO ()
+setByte : MutBlock -> Int -> Bits8 -> IO ()
 setByte (MkMB mb) pos v = Data.Buffer.setByte mb pos (cast v)
 
 export
@@ -64,7 +61,7 @@ copyBlock src start len (MkMB dest) loc
 -- even with namespaces. Still, we might desire to read from a MutBlock so this
 -- is provided.
 export
-getMByte : MutBlock -> (loc : Int) -> IO Word8
+getMByte : MutBlock -> (loc : Int) -> IO Bits8
 getMByte (MkMB mb) loc = cast <$> Data.Buffer.getByte mb loc
 
 ---------------------------------------------------------------------

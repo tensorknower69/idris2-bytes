@@ -1,9 +1,7 @@
-module Data.Bytes.Strict.Internal
+module Data.Bytes.Internal
 
 import Data.Bytes.Util
 import Data.Bytes.Prim
-
-import Data.Word.Word8
 
 import Data.Strings -- fastAppend
 import Data.List    -- intersperse
@@ -13,7 +11,7 @@ import Data.So      -- for our NonEmpty
 
 private
 moduleName : String
-moduleName = "Data.Bytes.Strict.Internal"
+moduleName = "Data.Bytes.Internal"
 
 -- Our Bytes type, a Ptr to a `block` of memory, the current 0-based offset
 -- into that memory, its size in bytes.
@@ -59,8 +57,8 @@ Otherwise:
 is compiled to:
  case mallocByteString 2 of
      ForeignPtr f internals ->
-          case writeWord8OffAddr# f 0 255 of _ ->
-          case writeWord8OffAddr# f 0 127 of _ ->
+          case writeBits8OffAddr# f 0 255 of _ ->
+          case writeBits8OffAddr# f 0 127 of _ ->
           case eqAddr# f f of
                  False -> case compare (GHC.Prim.plusAddr# f 0)
                                        (GHC.Prim.plusAddr# f 0)
@@ -96,10 +94,10 @@ unsafeCreateAndTrim len0 f = unsafePerformIO $ do
 -- TODO: Why is NonEmpty for List available here? I have not imported
 -- Data.List!
 export
-packUpToNBytes : Int -> (l : List Word8) -> (Bytes, List Word8)
+packUpToNBytes : Int -> (l : List Bits8) -> (Bytes, List Bits8)
 packUpToNBytes len xs0 = unsafeCreateNBytes' len $ \p => go p len 0 xs0
   where
-    go : MutBlock -> Int -> Int -> List Word8 -> IO (Int, List Word8)
+    go : MutBlock -> Int -> Int -> List Bits8 -> IO (Int, List Bits8)
     go b n pos [] = pure (len - n, [])
     go b 0 pos xs = pure (len, xs)
     go b n pos (x :: xs) = setByte b pos x *> go b (n-1) (pos+1) xs
@@ -116,7 +114,7 @@ packUpToNBytes len xs0 = unsafeCreateNBytes' len $ \p => go p len 0 xs0
 -- unpackBytes and unpackChars do the lazy loop, while unpackAppendBytes and
 -- unpackAppendChars do the chunks strictly.
 
--- unpackBytes : Bytes -> List Word8
+-- unpackBytes : Bytes -> List Bits8
 
 
 

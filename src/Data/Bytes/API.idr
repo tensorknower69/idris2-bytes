@@ -1,15 +1,13 @@
-module Data.Bytes.Strict.API
+module Data.Bytes.API
 
-import public Data.Bytes.Strict.Internal
+import public Data.Bytes.Internal
 import public Data.Bytes.Prim
 import        Data.Bytes.Util
-
-import Data.Word.Word8
 
 import Data.List -- List.drop
 
 moduleName : String
-moduleName = "Data.Bytes.Strict.API"
+moduleName = "Data.Bytes.API"
 
 %hide Prelude.empty
 
@@ -81,26 +79,26 @@ empty = neutral
 -- Intended complexity: O(1)
 -- Provides NonEmpty
 export
-singleton : Word8 -> Bytes
+singleton : Bits8 -> Bytes
 singleton w = unsafeCreateBytes 1 $ \p => setByte p 0 w
 
 private
-packLenBytes : Int -> List Word8 -> Bytes
+packLenBytes : Int -> List Bits8 -> Bytes
 packLenBytes len xs0
     = unsafeCreateBytes len $ \b => go 0 b xs0
   where
-    go : Int -> MutBlock -> List Word8 -> IO ()
+    go : Int -> MutBlock -> List Bits8 -> IO ()
     go p buf [] = pure ()
     go p buf (x::xs) = setByte buf p x *> go (p+1) buf xs
 
 -- Intended complexity: O(n)
 export
-pack : List Word8 -> Bytes
+pack : List Bits8 -> Bytes
 pack xs = packLenBytes (cast (length xs)) xs
 
 -- Intended complexity: O(n)
 export
-unpack : Bytes -> List Word8
+unpack : Bytes -> List Bits8
 unpack (MkB fp pos len) =
   take (intToNat len) . drop (intToNat pos)
                       . unsafePerformIO . blockData $ fp
@@ -122,7 +120,7 @@ null buf = 0 >= length buf
 
 -- Intended complexity: O(1)
 export
-cons : Word8 -> Bytes -> Bytes
+cons : Bits8 -> Bytes -> Bytes
 cons x (MkB p0 pos len)
     = do unsafeCreateBytes (1 + len) $ \p => do
          setByte p 0 x
@@ -130,7 +128,7 @@ cons x (MkB p0 pos len)
 
 -- Intended complexity: O(1)
 export
-snoc : Bytes -> Word8 -> Bytes
+snoc : Bytes -> Bits8 -> Bytes
 snoc (MkB p0 pos len) x
   = unsafeCreateBytes (1 + len) $ \p => do
       copyBlock p0 pos len p 0
@@ -138,12 +136,12 @@ snoc (MkB p0 pos len) x
 
 -- Intended complexity: O(1)
 export
-head : (b : Bytes) -> NonEmpty b => Word8
+head : (b : Bytes) -> NonEmpty b => Bits8
 head (MkB b pos _) = unsafePerformIO (getByte b pos)
 
 export
 partial
-head' : (b : Bytes) -> Word8
+head' : (b : Bytes) -> Bits8
 head' (MkB b pos len) = if 0 >= len
   then errorCall moduleName "head'" "block empty"
   else unsafePerformIO (getByte b pos)
@@ -162,11 +160,11 @@ tail' (MkB p pos len) = if len > 0
 
 -- Intended complexity: O(1)
 export
-uncons : (b : Bytes) -> NonEmpty b => (Word8, Bytes)
+uncons : (b : Bytes) -> NonEmpty b => (Bits8, Bytes)
 uncons bs = (head bs, tail bs)
 
 export
-uncons' : Bytes -> Maybe (Word8, Bytes)
+uncons' : Bytes -> Maybe (Bits8, Bytes)
 uncons' bs@(MkB _ _ len) = if len > 0
                              then Just ( assert_total $ head' bs
                                        , assert_total $ tail' bs)
@@ -174,7 +172,7 @@ uncons' bs@(MkB _ _ len) = if len > 0
 
 export
 partial
-uncons'' : Bytes -> (Word8, Bytes)
+uncons'' : Bytes -> (Bits8, Bytes)
 uncons'' bs@(MkB _ _ len)
   = if len > 0
       then (head' bs, tail' bs)
@@ -182,12 +180,12 @@ uncons'' bs@(MkB _ _ len)
 
 -- Intended complexity: O(1)
 export
-last : (b : Bytes) -> NonEmpty b => Word8
+last : (b : Bytes) -> NonEmpty b => Bits8
 last (MkB p pos len) = unsafePerformIO (getByte p (len + pos - 1))
 
 export
 partial
-last' : Bytes -> Word8
+last' : Bytes -> Bits8
 last' (MkB p pos len) = if len > 0
                           then unsafePerformIO (getByte p (len + pos - 1))
                           else errorCall moduleName "last'" "block empty"
@@ -206,11 +204,11 @@ init' (MkB p pos len) = if len > 0
 
 -- Intended complexity: O(1)
 export
-unsnoc : (b : Bytes) -> NonEmpty b => (Bytes, Word8)
+unsnoc : (b : Bytes) -> NonEmpty b => (Bytes, Bits8)
 unsnoc bs = (init bs, last bs)
 
 export
-unsnoc' : Bytes -> Maybe (Bytes, Word8)
+unsnoc' : Bytes -> Maybe (Bytes, Bits8)
 unsnoc' bs@(MkB _ _ len) = if len > 0
                              then Just ( assert_total $ init' bs
                                        , assert_total $ last' bs)
@@ -218,7 +216,7 @@ unsnoc' bs@(MkB _ _ len) = if len > 0
 
 export
 partial
-unsnoc'' : Bytes -> (Bytes, Word8)
+unsnoc'' : Bytes -> (Bytes, Bits8)
 unsnoc'' bs@(MkB _ _ len) = if len > 0
                               then (init' bs, last' bs)
                               else errorCall moduleName "unsnoc''" "block empty"
@@ -243,7 +241,7 @@ reverse b@(MkB buf pos len) = unsafeCreateBytes len $ \new =>
 
 sort : Bytes -> Bytes
 
-intersperse : Word8 -> Bytes -> Bytes
+intersperse : Bits8 -> Bytes -> Bytes
 
 intercalate : Bytes -> List Bytes -> Bytes
 
@@ -269,7 +267,7 @@ stringToBytes str len = unsafeCreateNBytes' len $ \b => do
 
 -- Intended complexity: O(n)
 export
-foldl : (a -> Word8 -> a) -> a -> Bytes -> a
+foldl : (a -> Bits8 -> a) -> a -> Bytes -> a
 foldl f v (MkB b pos len)
     = unsafePerformIO $ go v pos (len + pos)
   where
@@ -280,17 +278,17 @@ foldl f v (MkB b pos len)
 
 -- TODO: consider foldl', foldl with a lazy accumulator
 
-foldl1 : (Word8 -> Word8 -> Word8) -> (b : Bytes) -> NonEmpty b => Word8
+foldl1 : (Bits8 -> Bits8 -> Bits8) -> (b : Bytes) -> NonEmpty b => Bits8
 foldl1 f b = foldl f (head b) (tail b)
 
 partial
-foldl1' : (Word8 -> Word8 -> Word8) -> (b : Bytes) -> Word8
+foldl1' : (Bits8 -> Bits8 -> Bits8) -> (b : Bytes) -> Bits8
 foldl1' f b = foldl f (head' b) (tail'
  b)
 
 -- Intended complexity: O(n)
 export
-foldr : (Word8 -> a -> a) -> a -> Bytes -> a
+foldr : (Bits8 -> a -> a) -> a -> Bytes -> a
 foldr f v (MkB bs pos len)
     = unsafePerformIO $ go v pos (len + pos - 1)
   where
@@ -301,16 +299,16 @@ foldr f v (MkB bs pos len)
 
 -- TODO: consider foldr', foldr with a lazy accumulator
 
-foldr1 : (Word8 -> Word8 -> Word8) -> (b : Bytes) -> NonEmpty b => Word8
+foldr1 : (Bits8 -> Bits8 -> Bits8) -> (b : Bytes) -> NonEmpty b => Bits8
 foldr1 f b = foldr f (last b) (init b)
 
 partial
-foldr1' : (Word8 -> Word8 -> Word8) -> Bytes -> Word8
+foldr1' : (Bits8 -> Bits8 -> Bits8) -> Bytes -> Bits8
 foldr1' f b = foldr f (last' b) (init' b)
 
 concat : List Bytes -> Bytes
 
-concatMap : (Word8 -> Bytes) -> Bytes -> Bytes
+concatMap : (Bits8 -> Bytes) -> Bytes -> Bytes
 
 -------------------------------------------------
 -- Mapping
@@ -318,7 +316,7 @@ concatMap : (Word8 -> Bytes) -> Bytes -> Bytes
 
 -- Intended complexity: O(n)
 export
-map : (Word8 -> Word8) -> Bytes -> Bytes
+map : (Bits8 -> Bits8) -> Bytes -> Bytes
 map f (MkB b0 pos len)
     = unsafeCreateBytes len $ \new => map_ 0 len new
   where
@@ -330,22 +328,22 @@ map f (MkB b0 pos len)
                                assert_total $ map_ (p+1) q buf
 
 -- foldl with a state passed along
-mapAccumL : (s -> Word8 -> (s, Word8)) -> s -> Bytes -> (s, Bytes)
+mapAccumL : (s -> Bits8 -> (s, Bits8)) -> s -> Bytes -> (s, Bytes)
 
 -- foldr with a state passed along
-mapAccumR : (s -> Word8 -> (s, Word8)) -> s -> Bytes -> (s, Bytes)
+mapAccumR : (s -> Bits8 -> (s, Bits8)) -> s -> Bytes -> (s, Bytes)
 
 -------------------------------------------------
 -- Scans
 -------------------------------------------------
 
-scanl : (Word8 -> Word8 -> Word8) -> Word8 -> Bytes -> Bytes
-scanl1 : (Word8 -> Word8 -> Word8) -> (b : Bytes) -> NonEmpty b => Bytes
-scanl1' : (Word8 -> Word8 -> Word8) -> Bytes -> Bytes
+scanl : (Bits8 -> Bits8 -> Bits8) -> Bits8 -> Bytes -> Bytes
+scanl1 : (Bits8 -> Bits8 -> Bits8) -> (b : Bytes) -> NonEmpty b => Bytes
+scanl1' : (Bits8 -> Bits8 -> Bits8) -> Bytes -> Bytes
 
-scanr : (Word8 -> Word8 -> Word8) -> Word8 -> Bytes -> Bytes
-scanr1 : (Word8 -> Word8 -> Word8) -> (b : Bytes) -> NonEmpty b => Bytes
-scanr1' : (Word8 -> Word8 -> Word8) -> Bytes -> Bytes
+scanr : (Bits8 -> Bits8 -> Bits8) -> Bits8 -> Bytes -> Bytes
+scanr1 : (Bits8 -> Bits8 -> Bits8) -> (b : Bytes) -> NonEmpty b => Bytes
+scanr1' : (Bits8 -> Bits8 -> Bits8) -> Bytes -> Bytes
 
 -------------------------------------------------
 -- Generate Bytes
@@ -354,7 +352,7 @@ scanr1' : (Word8 -> Word8 -> Word8) -> Bytes -> Bytes
 -- This can be written faster with a primitive like memset, should backends be
 -- inclined to provide one?
 -- Like replicate for List and elsewhere negative values are treated as 0.
-replicate' : Int -> Word8 -> Bytes
+replicate' : Int -> Bits8 -> Bytes
 replicate' n w = if n > 0
                    then map (const w) $ unsafeCreateBytes n $ (\_ => pure ())
                    else neutral
@@ -367,14 +365,14 @@ replicate' n w = if n > 0
 -- due to performance, note that Nat compiles to Integer which (depending on
 -- the backend) can be slower than Int.
 -- TODO: should this case on Nat or is a cast fine? What does casing gain us?
-replicate : Nat -> Word8 -> Bytes
+replicate : Nat -> Bits8 -> Bytes
 replicate n w = replicate' (cast n) w
 
-unfoldr : (a -> Maybe (Word8, a)) -> a -> Bytes
+unfoldr : (a -> Maybe (Bits8, a)) -> a -> Bytes
 
-unfoldrN : Nat -> (a -> Maybe (Word8, a)) -> a -> (Bytes, Maybe a)
+unfoldrN : Nat -> (a -> Maybe (Bits8, a)) -> a -> (Bytes, Maybe a)
 
-unfoldrN' : Int -> (a -> Maybe (Word8, a)) -> a -> (Bytes, Maybe a)
+unfoldrN' : Int -> (a -> Maybe (Bits8, a)) -> a -> (Bytes, Maybe a)
 
 -------------------------------------------------
 -- Splitting Bytes
@@ -389,21 +387,21 @@ drop  : Nat -> Bytes -> Bytes
 splitAt' : Int -> Bytes -> (Bytes, Bytes)
 splitAt  : Nat -> Bytes -> (Bytes, Bytes)
 
-takeWhile : (Word8 -> Bool) -> Bytes -> Bytes
-dropWhile : (Word8 -> Bool) -> Bytes -> Bytes
+takeWhile : (Bits8 -> Bool) -> Bytes -> Bytes
+dropWhile : (Bits8 -> Bool) -> Bytes -> Bytes
 
-span  : (Word8 -> Bool) -> Bytes -> (Bytes, Bytes)
-spanEnd  : (Word8 -> Bool) -> Bytes -> (Bytes, Bytes) -- starts from end
+span  : (Bits8 -> Bool) -> Bytes -> (Bytes, Bytes)
+spanEnd  : (Bits8 -> Bool) -> Bytes -> (Bytes, Bytes) -- starts from end
 
 -- Should I really provide break when a person can just write not?
 -- Might as well, for the same reason that we provide Nat and Int versions.
-break : (Word8 -> Bool) -> Bytes -> (Bytes, Bytes)
-breakEnd  : (Word8 -> Bool) -> Bytes -> (Bytes, Bytes) -- starts from end
+break : (Bits8 -> Bool) -> Bytes -> (Bytes, Bytes)
+breakEnd  : (Bits8 -> Bool) -> Bytes -> (Bytes, Bytes) -- starts from end
 
 -- potentially faster than groupBy (==), depends how we write this
 group : Bytes -> List Bytes
 
-groupBy : (Word8 -> Word8 -> Bool) -> Bytes -> List Bytes
+groupBy : (Bits8 -> Bits8 -> Bool) -> Bytes -> List Bytes
 
 inits : Bytes -> List Bytes
 tails : Bytes -> List Bytes
@@ -415,18 +413,18 @@ stripPrefix : Bytes -> Bytes -> Maybe Bytes
 -- Same, but from the other end.
 stripSuffix : Bytes -> Bytes -> Maybe Bytes
 
--- split on, and consume, each occurence of Word8
-split : Word8 -> Bytes -> List Bytes
+-- split on, and consume, each occurence of Bits8
+split : Bits8 -> Bytes -> List Bytes
 
 -- same as above with predicate to determine delimiter
-splitWith : (Word8 -> Bool) -> Bytes -> List Bytes
+splitWith : (Bits8 -> Bool) -> Bytes -> List Bytes
 
 -------------------------------------------------
 -- Predicates
 -------------------------------------------------
 
-any : (Word8 -> Bool) -> Bytes -> Bool
-all : (Word8 -> Bool) -> Bytes -> Bool
+any : (Bits8 -> Bool) -> Bytes -> Bool
+all : (Bits8 -> Bool) -> Bytes -> Bool
 
 isPrefixOf : Bytes -> Bytes -> Bool
 isSuffixOf : Bytes -> Bytes -> Bool
@@ -439,7 +437,7 @@ isInfixOf  : Bytes -> Bytes -> Bool
 
 -- TODO: needs more fitting name, even though yes we have a string of bytes in
 -- memory.
--- Like break but we're breaking on a Bytes instead of a Word8. Examples:
+-- Like break but we're breaking on a Bytes instead of a Bits8. Examples:
 {-
 breakSubstring [3,4]     [1,2,3,4,5] ~ ([1,2],[3,4,5])
 breakSubstring [3]       [1,2,3,4,5] ~ ([1,2],[3,4,5])
@@ -450,20 +448,20 @@ breakSubstring [6]       [1,2,3,4,5] ~ ([1,2,3,4,5],[])
 breakSubstring : Bytes -> Bytes -> (Bytes, Bytes)
 
 
-elem : Word8 -> Bytes -> Bool
+elem : Bits8 -> Bytes -> Bool
 
 -- notElem is a common enough need to provide it for users so they don't have
 -- to compose `not`
-notElem : Word8 -> Bytes -> Bool
+notElem : Bits8 -> Bytes -> Bool
 
-maximum :  Bytes -> Word8
-minimum :  Bytes -> Word8
+maximum :  Bytes -> Bits8
+minimum :  Bytes -> Bits8
 
-find : (Word8 -> Bool) -> Bytes -> Maybe Word8
+find : (Bits8 -> Bool) -> Bytes -> Maybe Bits8
 
-filter : (Word8 -> Bool) -> Bytes -> Bytes
+filter : (Bits8 -> Bool) -> Bytes -> Bytes
 
-partition : (Word8 -> Bool) -> Bytes -> (Bytes, Bytes)
+partition : (Bits8 -> Bool) -> Bytes -> (Bytes, Bytes)
 
 -------------------------------------------------
 -- Indexing
@@ -472,33 +470,33 @@ partition : (Word8 -> Bool) -> Bytes -> (Bytes, Bytes)
 -- NB: Best to avoid the Nat returning options until we have a primitive cast
 -- for it to Int.
 
-index : Bytes -> Nat -> Word8
+index : Bytes -> Nat -> Bits8
 
-index' : Bytes -> Int -> Word8
+index' : Bytes -> Int -> Bits8
 
-elemIndex  : Word8 -> Bytes -> Maybe Nat
-elemIndex' : Word8 -> Bytes -> Maybe Int
+elemIndex  : Bits8 -> Bytes -> Maybe Nat
+elemIndex' : Bits8 -> Bytes -> Maybe Int
 
-elemIndices  : Word8 -> Bytes -> List Nat
-elemIndices' : Word8 -> Bytes -> List Int
+elemIndices  : Bits8 -> Bytes -> List Nat
+elemIndices' : Bits8 -> Bytes -> List Int
 
-elemIndexEnd  : Word8 -> Bytes -> Maybe Nat
-elemIndexEnd' : Word8 -> Bytes -> Maybe Int
+elemIndexEnd  : Bits8 -> Bytes -> Maybe Nat
+elemIndexEnd' : Bits8 -> Bytes -> Maybe Int
 
-findIndex  : (Word8 -> Bool) -> Bytes -> Maybe Nat
-findIndex' : (Word8 -> Bool) -> Bytes -> Maybe Int
+findIndex  : (Bits8 -> Bool) -> Bytes -> Maybe Nat
+findIndex' : (Bits8 -> Bool) -> Bytes -> Maybe Int
 
-count  : Word8 -> Bytes -> Nat
-count' : Word8 -> Bytes -> Int
+count  : Bits8 -> Bytes -> Nat
+count' : Bits8 -> Bytes -> Int
 
 -------------------------------------------------
 -- Zips
 -------------------------------------------------
 
 -- analogous to zip for List
-zip : Bytes -> Bytes -> List (Word8, Word8)
+zip : Bytes -> Bytes -> List (Bits8, Bits8)
 
-zipWith : (Word8 -> Word8 -> a) -> Bytes -> Bytes -> List a
+zipWith : (Bits8 -> Bits8 -> a) -> Bytes -> Bytes -> List a
 
-unzip : List (Word8, Word8) -> (Bytes, Bytes)
+unzip : List (Bits8, Bits8) -> (Bytes, Bytes)
 
